@@ -7,7 +7,7 @@ exports.signDocument = async (req, res) => {
     const { token, typedName } = req.body;
     
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
         
         await prisma.$transaction(async (tx) => {
             const signer = await tx.signer.findUnique({ 

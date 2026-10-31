@@ -1,0 +1,95 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------
+// Core Document Models
+// ---------------------------------------------------------
+
+model Document {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  filename  String
+  filepath  String
+  fileHash  String           // Stored as lowercase hex SHA-256[cite: 1]
+  requests  SigningRequest[]
+  createdAt DateTime         @default(now())
+}
+
+model SigningRequest {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  documentId    String       @db.ObjectId
+  document      Document     @relation(fields: [documentId], references: [id])
+  status        String       @default("PENDING") 
+  // Stores the latest hash to prevent undetected deletion of the last audit entry
+  chainHeadHash String       @default("0000000000000000000000000000000000000000000000000000000000000000")
+  signers       Signer[]
+  auditTrail    AuditEntry[]
+  certificate   Certificate?
+  createdAt     DateTime     @default(now())
+}
+
+model Signer {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  signingRequestId String         @db.ObjectId
+  request          SigningRequest @relation(fields: [signingRequestId], references: [id])
+  name             String
+  email            String
+  orderIndex       Int            // Enforces the required signing order[cite: 1]
+  tokenId          String?        @unique 
+  tokenUsed        Boolean        @default(false)
+  status           String         @default("PENDING") // PENDING, PAID, SIGNED
+  feeAmount        Int            @default(0)         // Integer stored in kobo[cite: 1]
+  payment          Payment?
+  signedAt         DateTime?
+  ipAddress        String?
+  userAgent        String?
+}
+
+// ---------------------------------------------------------
+// Audit & Security Models
+// ---------------------------------------------------------
+
+model AuditEntry {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  signingRequestId String         @db.ObjectId
+  request          SigningRequest @relation(fields: [signingRequestId], references: [id])
+  action           String         
+  eventData        Json           // Stored as JSON with sorted keys[cite: 2]
+  previousHash     String         // The previous entry's hash in the chain[cite: 2]
+  hash             String         // SHA-256 of previousHash + sorted eventData[cite: 2]
+  createdAt        DateTime       @default(now())
+}
+
+model Certificate {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  signingRequestId String         @unique @db.ObjectId
+  request          SigningRequest @relation(fields: [signingRequestId], references: [id])
+  certificateData  Json           // Stores document hash, signer details, and final chain hash[cite: 2]
+  createdAt        DateTime       @default(now())
+}
+
+// ---------------------------------------------------------
+// Payment & Webhook Models
+// ---------------------------------------------------------
+
+model Payment {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  transactionRef String   @unique // The Squad transaction_ref[cite: 3]
+  signerId       String   @unique @db.ObjectId
+  signer         Signer   @relation(fields: [signerId], references: [id])
+  amount         Int      
+  status         String
+  createdAt      DateTime @default(now())
+}
+
+model WebhookEvent {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  transactionRef String   @unique // Process each transaction_ref only once[cite: 3]
+  payload        Json
+  processedAt    DateTime @default(now())
+}

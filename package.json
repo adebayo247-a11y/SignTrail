@@ -1,0 +1,36 @@
+{
+  "name": "signtrail",
+  "version": "1.0.0",
+  "description": "E-Signatures with a Tamper-Evident Audit Trail",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adebayo247-a11y/SignTrail.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/adebayo247-a11y/SignTrail/issues"
+  },
+  "homepage": "https://github.com/adebayo247-a11y/SignTrail#readme",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.20.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prisma": "^5.22.0"
+  }
+}

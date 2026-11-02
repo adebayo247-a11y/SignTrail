@@ -3,6 +3,48 @@ const axios = require('axios');
 const prisma = require('../config/db');
 const { appendAuditEntry } = require('../services/auditService');
 
+exports.initPayment = async (req, res) => {
+    const { signerId } = req.body;
+    try {
+        const signer = await prisma.signer.findUnique({ where: { id: signerId } });
+        
+        if (!signer) return res.status(404).json({ error: 'Signer not found' });
+        if (signer.feeAmount === 0) return res.status(400).json({ error: 'No fee required for this signer' });
+
+        // Generate a unique transaction reference
+        const transactionRef = 'TXN-' + crypto.randomBytes(8).toString('hex');
+
+        // Ping Squad to create a checkout session
+        const squadResponse = await axios.post('https://sandbox-api-d.squadco.com/transaction/initiate', {
+            amount: signer.feeAmount,
+            email: signer.email,
+            initiate_type: 'inline',
+            transaction_ref: transactionRef,
+            callback_url: 'http://localhost:7070' // Placeholder for local testing
+        }, {
+            headers: { Authorization: `Bearer ${process.env.SQUAD_SECRET_KEY}` }
+        });
+
+        // Save the pending payment to MongoDB
+        await prisma.payment.create({
+            data: {
+                transactionRef,
+                signerId,
+                amount: signer.feeAmount,
+                status: 'PENDING'
+            }
+        });
+
+        res.json({ 
+            message: 'Payment initialized', 
+            checkoutUrl: squadResponse.data.data.checkout_url, 
+            transactionRef 
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.response?.data || error.message });
+    }
+};
+
 exports.squadWebhook = async (req, res) => {
     const SQUAD_SECRET = process.env.SQUAD_SECRET_KEY;
     const signature = req.headers['x-squad-encrypted-body'];

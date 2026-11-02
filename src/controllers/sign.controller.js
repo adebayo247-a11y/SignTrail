@@ -8,7 +8,15 @@ exports.signDocument = async (req, res) => {
     
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        
+
+        // Pre-compute the document hash OUTSIDE the transaction to avoid slow
+        // synchronous file I/O (fs.readFileSync) holding a DB transaction open.
+        const signerDoc = await prisma.signer.findUnique({
+            where: { id: decoded.signerId },
+            select: { request: { select: { document: { select: { filepath: true } } } } }
+        });
+        const currentHash = signerDoc ? hashFile(signerDoc.request.document.filepath) : null;
+
         await prisma.$transaction(async (tx) => {
             const signer = await tx.signer.findUnique({ 
                 where: { id: decoded.signerId }, 
@@ -26,7 +34,6 @@ exports.signDocument = async (req, res) => {
                 throw new Error('Previous signers must sign first.');
             }
 
-            const currentHash = hashFile(signer.request.document.filepath);
             if (currentHash !== signer.request.document.fileHash) {
                 await appendAuditEntry(tx, signer.signingRequestId, 'REJECTED_ATTEMPT', { reason: 'Document hash mismatch' });
                 throw new Error('Document has been tampered with.');
@@ -67,7 +74,7 @@ exports.signDocument = async (req, res) => {
                 await tx.certificate.create({ data: { signingRequestId: signer.signingRequestId, certificateData: certData } });
                 await appendAuditEntry(tx, signer.signingRequestId, 'COMPLETED', certData);
             }
-        });
+        }, { timeout: 15000 });
 
         res.json({ message: 'Successfully signed' });
     } catch (error) {

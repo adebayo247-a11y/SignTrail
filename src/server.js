@@ -6,6 +6,12 @@ const apiRoutes = require('./routes/api.routes');
 const app = express();
 const PORT = process.env.PORT || 7070;
 
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: "SignTrail API is live and running"
+    });
+});
+
 app.use(cors());
 
 // Global JSON middleware configured to retain the raw body buffer for webhook signature validation

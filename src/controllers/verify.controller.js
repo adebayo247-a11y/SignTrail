@@ -8,8 +8,12 @@ exports.verifyDocument = async (req, res) => {
     const hash = hashFile(req.file.path);     
     fs.unlinkSync(req.file.path);      
     
+    // UPDATE: Specifically filter for a document that has a COMPLETED request
     const document = await prisma.document.findFirst({         
-        where: { fileHash: hash },         
+        where: { 
+            fileHash: hash,
+            requests: { some: { status: 'COMPLETED' } } 
+        },         
         include: { requests: { include: { certificate: true }, where: { status: 'COMPLETED' } } }     
     });     
     

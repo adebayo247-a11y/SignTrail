@@ -74,7 +74,7 @@ exports.signDocument = async (req, res) => {
                 await tx.certificate.create({ data: { signingRequestId: signer.signingRequestId, certificateData: certData } });
                 await appendAuditEntry(tx, signer.signingRequestId, 'COMPLETED', certData);
             }
-        }, { timeout: 15000 });
+        }, { timeout: 259200000 }); // 72 hours in milliseconds
 
         res.json({ message: 'Successfully signed' });
     } catch (error) {

@@ -1,0 +1,33 @@
+$kind: http-request
+description: ""
+url: https://signtrail.onrender.com/api/request
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: document
+      src:
+        - /C:/Users/hp/Downloads/CH 18 Challenge 1  Backend Questions (1).pdf
+      description: ""
+      disabled: false
+    - type: text
+      key: signers
+      value: |-
+        [
+            {
+                "name": "Sam",
+                "email": "developer@tech.com",
+                "feeAmount": 20000, 
+                "order": 1
+            },
+            {
+                "name": "Alice",
+                "email": "client@business.com",
+                "feeAmount": 0,
+                "order": 2
+            }
+        ]
+      description: ""
+      disabled: false
+order: 2000

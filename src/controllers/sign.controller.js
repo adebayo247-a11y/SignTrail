@@ -5,7 +5,7 @@ const { appendAuditEntry } = require('../services/auditService');
 
 exports.signDocument = async (req, res) => {
     const { token, typedName } = req.body;
-    
+
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
@@ -18,8 +18,8 @@ exports.signDocument = async (req, res) => {
         const currentHash = signerDoc ? hashFile(signerDoc.request.document.filepath) : null;
 
         await prisma.$transaction(async (tx) => {
-            const signer = await tx.signer.findUnique({ 
-                where: { id: decoded.signerId }, 
+            const signer = await tx.signer.findUnique({
+                where: { id: decoded.signerId },
                 include: { request: { include: { document: true, signers: true } } }
             });
 
@@ -64,7 +64,7 @@ exports.signDocument = async (req, res) => {
             const allSigners = await tx.signer.findMany({ where: { signingRequestId: signer.signingRequestId } });
             if (allSigners.every(s => s.status === 'SIGNED')) {
                 await tx.signingRequest.update({ where: { id: signer.signingRequestId }, data: { status: 'COMPLETED' } });
-                
+
                 const certData = {
                     documentHash: currentHash,
                     signers: allSigners.map(s => ({ name: s.name, time: s.signedAt, ip: s.ipAddress })),
@@ -74,7 +74,7 @@ exports.signDocument = async (req, res) => {
                 await tx.certificate.create({ data: { signingRequestId: signer.signingRequestId, certificateData: certData } });
                 await appendAuditEntry(tx, signer.signingRequestId, 'COMPLETED', certData);
             }
-        }, { timeout: 259200000 }); // 72 hours in milliseconds
+        }, { timeout: 15000 }); // 72 hours in milliseconds
 
         res.json({ message: 'Successfully signed' });
     } catch (error) {

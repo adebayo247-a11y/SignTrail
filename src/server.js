@@ -4,6 +4,7 @@ const cors = require('cors');
 const apiRoutes = require('./routes/api.routes');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 7070;
 
 app.use(cors());
@@ -16,10 +17,10 @@ app.use(express.json({
 }));
 
 app.get('/', (req, res) => {
-    res.status(200).json({ 
-        name: "SignTrail API", 
-        status: "Live and running perfectly", 
-        version: "1.0.0" 
+    res.status(200).json({
+        name: "SignTrail API",
+        status: "Live and running perfectly",
+        version: "1.0.0"
     });
 });
 
@@ -27,5 +28,5 @@ app.get('/', (req, res) => {
 app.use('/api', apiRoutes);
 
 app.listen(PORT, () => {
-    console.log(`SignTrail API running securely on port ${PORT}`);
+    console.log(`SignTrail API running perfectly on port ${PORT}`);
 });

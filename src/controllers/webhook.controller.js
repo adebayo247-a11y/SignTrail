@@ -7,7 +7,7 @@ exports.initPayment = async (req, res) => {
     const { signerId } = req.body;
     try {
         const signer = await prisma.signer.findUnique({ where: { id: signerId } });
-        
+
         if (!signer) return res.status(404).json({ error: 'Signer not found' });
         if (signer.feeAmount === 0) return res.status(400).json({ error: 'No fee required for this signer' });
 
@@ -20,7 +20,7 @@ exports.initPayment = async (req, res) => {
             email: signer.email,
             initiate_type: 'inline',
             transaction_ref: transactionRef,
-            callback_url: 'http://localhost:7070' // Placeholder for local testing
+            callback_url: process.env.CLIENT_URL || 'https://signtrail.onrender.com'// Placeholder for local testing
         }, {
             headers: { Authorization: `Bearer ${process.env.SQUAD_SECRET_KEY}` }
         });
@@ -35,10 +35,10 @@ exports.initPayment = async (req, res) => {
             }
         });
 
-        res.json({ 
-            message: 'Payment initialized', 
-            checkoutUrl: squadResponse.data.data.checkout_url, 
-            transactionRef 
+        res.json({
+            message: 'Payment initialized',
+            checkoutUrl: squadResponse.data.data.checkout_url,
+            transactionRef
         });
     } catch (error) {
         res.status(500).json({ error: error.response?.data || error.message });
@@ -55,7 +55,7 @@ exports.squadWebhook = async (req, res) => {
     }
 
     const { Event, TransactionRef, Amount } = req.body;
-    
+
     if (Event === 'charge.completed') {
         try {
             await prisma.$transaction(async (tx) => {

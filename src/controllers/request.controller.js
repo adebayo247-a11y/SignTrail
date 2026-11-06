@@ -19,7 +19,10 @@ exports.createRequest = async (req, res) => {
         });
 
         const request = await prisma.signingRequest.create({
-            data: { documentId: document.id }
+            data: {
+                documentId: document.id,
+                chainHeadHash: '0000000000000000000000000000000000000000000000000000000000000000'
+            }
         });
 
         const signers = await Promise.all(signersData.map((s, index) => {
